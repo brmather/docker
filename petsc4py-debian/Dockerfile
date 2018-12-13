@@ -33,12 +33,13 @@ RUN apt-get update -qq && \
         libgeos++ \
         libproj-dev \
         proj-bin \
-        curl 
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+        curl \
+        wget && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-
-RUN python3 -m pip install --upgrade --no-cache-dir Cython numpy scipy matplotlib
-RUN python3 -m pip install --no-cache-dir setuptools wheel && \
+# Upgrade and install python packages
+RUN python3 -m pip install --upgrade --no-cache-dir Cython numpy scipy matplotlib && \
+    python3 -m pip install --no-cache-dir setuptools wheel && \
     python3 -m pip install --no-cache-dir packaging \
     jupyter \
     cartopy \
@@ -47,11 +48,11 @@ RUN python3 -m pip install --no-cache-dir setuptools wheel && \
 
 RUN alias python=python3
 
+# install PETSc
 ENV PETSC_VERSION=petsc-3.10.2
-RUN curl $PETSC_VERSION.tar.gz http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/$PETSC_VERSION.tar.gz
-RUN tar -xzf $PETSC_VERSION.tar.gz
-WORKDIR /$PETSC_VERSION
-RUN ./configure --with-shared-libraries --download-mpich \
+RUN wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/$PETSC_VERSION.tar.gz && \
+    tar -xzf $PETSC_VERSION.tar.gz && cd $PETSC_VERSION && \
+    ./configure --with-shared-libraries --download-mpich \
                                         --download-hdf5 \
                                         --download-fblaslapack \
                                         --download-scalapack \
@@ -64,17 +65,22 @@ RUN ./configure --with-shared-libraries --download-mpich \
                                         --download-fftw \
                                         --download-parmetis \
                                         --download-metis \
-                                        --prefix=/opt/petsc
+                                        --prefix=/opt/petsc && \
+    make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-debug all && \
+    make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-debug install && \
+    cd ../ && rm -rf $PETSC_VERSION PETSC_VERSION.tar.gz
 
-RUN make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-debug all
-RUN make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-debug install
-WORKDIR /
-RUN rm -rf $PETSC_VERSION PETSC_VERSION.tar.gz
+# clean up
+RUN apt-get remove -yq python-minimal && \
+    apt autoremove -yq && \
+    apt-get clean
+    
 
+# install mpi4py, h5py, petsc4py
 ENV PETSC_BIN=/opt/petsc/bin
-RUN env MPICC=$PETSC_BIN/mpicc MPICXX=$PETSC_BIN/mpicxx MPIFC=$PETSC_BIN/mpifort python3 -m pip install --no-cache-dir mpi4py
-RUN CC=$PETSC_BIN/mpicc FC=$PETSC_BIN/mpifort CXX=$PETSC_BIN/mpicxx HDF5_MPI="ON" HDF5_DIR=/opt/petsc python3 -m pip install --no-cache-dir --no-binary=h5py --no-deps h5py
-RUN PETSC_DIR=/opt/petsc PETSC_ARCH=arch-linux-c-debug python3 -m pip install --no-cache-dir --no-deps petsc4py
+RUN env MPICC=$PETSC_BIN/mpicc MPICXX=$PETSC_BIN/mpicxx MPIFC=$PETSC_BIN/mpifort python3 -m pip install --no-cache-dir mpi4py && \
+    CC=$PETSC_BIN/mpicc FC=$PETSC_BIN/mpifort CXX=$PETSC_BIN/mpicxx HDF5_MPI="ON" HDF5_DIR=/opt/petsc python3 -m pip install --no-cache-dir --no-binary=h5py --no-deps h5py && \
+    PETSC_DIR=/opt/petsc PETSC_ARCH=arch-linux-c-debug python3 -m pip install --no-cache-dir --no-deps petsc4py
 
 
 # Install Tini.. this is required because CMD (below) doesn't play nice with notebooks for some reason:
