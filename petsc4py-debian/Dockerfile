@@ -37,16 +37,19 @@ RUN apt-get update -qq && \
         wget && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+
+RUN alias python=python3
 # Upgrade and install python packages
-RUN python3 -m pip install --upgrade --no-cache-dir Cython numpy scipy matplotlib && \
-    python3 -m pip install --no-cache-dir setuptools wheel && \
+
+RUN python3 -m pip install --no-cache-dir setuptools wheel && \
+    python3 -m pip install --upgrade --no-cache-dir Cython numpy scipy matplotlib && \
     python3 -m pip install --no-cache-dir packaging \
+    pyvirtualdisplay \
     jupyter \
     cartopy \
     lavavu 
 
 
-RUN alias python=python3
 
 # install PETSc
 ENV PETSC_VERSION=petsc-3.10.2
@@ -70,8 +73,8 @@ RUN wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/$PETSC_VERSION.tar.g
     make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-debug install && \
     cd ../ && rm -rf $PETSC_VERSION PETSC_VERSION.tar.gz
 
-# clean up
-RUN apt-get remove -yq python-minimal && \
+# # clean up
+RUN apt-get remove -yq python && \
     apt autoremove -yq && \
     apt-get clean
     
