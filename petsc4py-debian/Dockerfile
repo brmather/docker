@@ -55,22 +55,27 @@ RUN python3 -m pip install --no-cache-dir setuptools wheel && \
 ENV PETSC_VERSION=petsc-3.10.2
 RUN wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/$PETSC_VERSION.tar.gz && \
     tar -xzf $PETSC_VERSION.tar.gz && cd $PETSC_VERSION && \
-    ./configure --with-shared-libraries --download-mpich \
-                                        --download-hdf5 \
-                                        --download-fblaslapack \
-                                        --download-scalapack \
-                                        --download-triangle \
-                                        --download-mumps \
-                                        --download-chaco \
-                                        --download-ctetgen \
-                                        --download-hypre \
-                                        --download-eigen \
-                                        --download-fftw \
-                                        --download-parmetis \
-                                        --download-metis \
-                                        --prefix=/opt/petsc && \
-    make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-debug all && \
-    make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-debug install && \
+    ./configure COPTFLAGS='-O3 -march=native -mtune=native' \
+                CXXOPTFLAGS='-O3 -march=native -mtune=native' \
+                FOPTFLAGS='-O3 -march=native -mtune=native' \
+                --with-shared-libraries \
+                --with-debugging=0 \
+                --download-mpich \
+                --download-hdf5 \
+                --download-fblaslapack \
+                --download-scalapack \
+                --download-triangle \
+                --download-mumps \
+                --download-chaco \
+                --download-ctetgen \
+                --download-hypre \
+                --download-eigen \
+                --download-fftw \
+                --download-parmetis \
+                --download-metis \
+                --prefix=/opt/petsc && \
+    make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-opt all && \
+    make PETSC_DIR=/$PETSC_VERSION PETSC_ARCH=arch-linux2-c-opt install && \
     cd ../ && rm -rf $PETSC_VERSION PETSC_VERSION.tar.gz
 
 # # clean up
